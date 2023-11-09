@@ -1,0 +1,16 @@
+{
+  "name": "af-os-simulator",
+  "version": "0.0.0",
+  "description": "",
+  "main": "target/server.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^27.0.3",
+    "esbuild": "^0.19.5",
+    "inline-web-worker": "^1.1.0"
+  }
+}
