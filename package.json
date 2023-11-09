@@ -4,7 +4,7 @@
   "description": "",
   "main": "target/server.js",
   "scripts": {
-    "start": "electron ."
+    "start": "node run"
   },
   "author": "",
   "license": "ISC",
