@@ -1,7 +1,25 @@
 import electron from "electron";
 import path from "path";
-import commands from "./commands";
-import Commands from "./commands";
+import Command from "./command";
+import Common from "./common";
+
+class Handler extends Command.Handler {
+    private readonly window: electron.BrowserWindow;
+
+    public constructor(window: electron.BrowserWindow) {
+        super();
+
+        this.window = window;
+    }
+
+    protected send_to_renderer(tp: Command.TransportPacket): void {
+        this.window.webContents.send("packet", tp);
+    }
+
+    public on_receive(packet: Command.Packet): Command.Return {
+        console.log("REC CLEAN PACKET", packet);
+    }
+}
 
 electron.app.once("ready", () => {
     const window = new electron.BrowserWindow({
@@ -15,33 +33,21 @@ electron.app.once("ready", () => {
         }
     });
 
-    window.maximize();
+    // window.maximize();
     window.loadFile(path.join(__dirname, "../source/source.html"));
-
     window.show();
-
     window.webContents.openDevTools();
 
-    let val = false;
-    setInterval(() => {
-        const packet: Commands.Packet = {
-            command: Commands.Names.CreateElement,
-            element_type: Commands.CreateElementType.Div
-        }
+    const handler = new Handler(window);
 
-        window.webContents.send("command", packet);
+    electron.ipcMain.on("packet", (event, tp) => {
+        handler.on_raw_return(tp);
+    });
 
-        val = !val;
-    }, 1000);
-
-    setInterval(() => {
-        const packet: Commands.Packet = {
-            command: Commands.Names.RegisterEventListener,
-            event_name: Commands.RegisterEventListenerNames.Click
-        }
-        
-        window.webContents.send("command", packet);
-
-        val = !val;
-    }, 700);
+    handler.send({
+        command: Command.Names.CreateElement,
+        element_type: Command.CreateElementType.Div
+    }, (element_return) => {
+        console.log("ER", element_return);
+    });
 });

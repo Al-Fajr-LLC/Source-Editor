@@ -1,23 +1,23 @@
 import electron from "electron";
-import Commands from "./commands";
+import Command from "./command";
 
-const beat = document.createElement("p");
+class Handler extends Command.Handler {
+    protected send_to_renderer(tp: Command.TransportPacket): void {
+        electron.ipcRenderer.send("packet", tp);
+    }
 
-function set_beat(val: string) {
-    beat.innerText = "packet: " + val;
+    public on_receive(packet: Command.Packet): Command.Return {
+        console.log("GOT THE PACKET", packet);
+        
+        return {
+            command: Command.Names.CreateElement,
+            id: 0
+        }
+    }
 }
 
-electron.ipcRenderer.on("command", (event, data: Commands.Packet) => {
-    set_beat(JSON.stringify(data));
+const handler = new Handler();
 
-    switch (data.command) {
-        case Commands.Names.CreateElement:
-            console.log("Create Element");
-            break;
-        case Commands.Names.RegisterEventListener:
-            console.log("Register event listener");
-            break;
-    }
+electron.ipcRenderer.on("packet", (event, tp: Command.TransportPacket) => {
+    handler.on_raw_return(tp);
 });
-
-document.body.appendChild(beat);

@@ -18,12 +18,12 @@ build([
         entry: "source/server.ts",
         out: "server.js",
         platform: "node",
-        external: ["electron"]
+        external: ["electron", "wait-sync"]
     },
     {
         entry: "source/source.ts",
         out: "source.js",
         platform: "node",
-        external: ["electron"]
+        external: ["electron", "wait-sync"]
     }
 ]);
