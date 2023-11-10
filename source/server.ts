@@ -44,10 +44,46 @@ electron.app.once("ready", () => {
         handler.on_raw_return(tp);
     });
 
-    handler.send({
-        command: Command.Names.CreateElement,
-        element_type: Command.CreateElementType.Div
-    }, (element_return) => {
-        console.log("ER", element_return);
-    });
+    function send_async(packet: Command.Packet) {
+        return new Promise<Command.Return>((resolve, reject) => {
+            handler.send(packet, (element_return) => resolve(element_return));
+        });
+    } 
+
+    (async () => {
+        send_async({
+            command: Command.Names.CreateElement,
+            element_type: Command.CreateElementType.P
+        }).then((el) => {
+            console.log("Successfully created P, ID = " + el.id);
+        });
+
+        send_async({
+            command: Command.Names.CreateElement,
+            element_type: Command.CreateElementType.Div
+        }).then((el) => {
+            console.log("Successfully created DIV, ID = " + el.id);
+        });
+
+        let i = 0;
+        let max = 30;
+
+        function go() {
+            send_async({
+                command: Command.Names.CreateElement,
+                element_type: Command.CreateElementType.Div
+            }).then((el) => {
+                console.log("Successfully created DIV, ID = " + el.id);
+            });
+
+            if (i > max) return;
+            i++;
+
+            setTimeout(() => {
+                go();
+            }, 0);
+        }
+
+        go();
+    })();
 });

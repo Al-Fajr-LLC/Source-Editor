@@ -1,18 +1,17 @@
 namespace Common {
     export function get_unique_id(used_ids: number[]): number {
+        used_ids.sort((a, b) => a - b);
+
         let chosen_id = 0;
-        let term = false;
-        used_ids.forEach((id, index) => {
-            if (term) return;
-            if (used_ids.length - 1 != index) {
-                if (used_ids[index + 1] != id + 1) {
-                    chosen_id = id + 1;
-                    term = true;
-                }
-            } else {
-                chosen_id = id + 1;
+        
+        function recurse() {
+            if (used_ids.includes(chosen_id)) {
+                chosen_id++;
+                recurse();
             }
-        });
+        }
+
+        recurse();
 
         return chosen_id;
     }

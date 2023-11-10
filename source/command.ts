@@ -74,16 +74,14 @@ namespace Command {
 
     export abstract class Handler {
         private send_queue: SendQueueNode[] = [];
-        private readonly polling_interval = 1000;
-        private waiter_timer: NodeJS.Timer | null = null;
+        private readonly polling_interval = 500;
 
         public constructor() {
             this.execute_next_queue();
         }
 
         private poll_next() {
-            this.waiter_timer = setTimeout(() => {
-                this.waiter_timer = null;
+            setTimeout(() => {
                 this.execute_next_queue()
             }, this.polling_interval);
         }
@@ -95,19 +93,13 @@ namespace Command {
                 return;
             }
             
-            console.log("Sending packet");
             const queue_el = this.send_queue[0];
-
-            console.log(queue_el);
 
             this.send_to_renderer({
                 type: Types.Send,
                 packet: queue_el.packet,
-                id: 0
+                id: queue_el.id
             });
-
-            this.send_queue.shift();
-            this.poll_next();
         }
 
         protected abstract send_to_renderer(tp: TransportPacket): void;
@@ -115,24 +107,35 @@ namespace Command {
         public abstract on_receive(packet: Packet): Return;
 
         public on_raw_return(tp: TransportPacket) {
-            if (tp.type == Command.Types.Send) {
-                const return_data = this.on_receive(tp.packet as Command.Packet);
+            switch (tp.type) {
+                case Command.Types.Send:
+                    const return_data = this.on_receive(tp.packet as Command.Packet);
 
-                this.send_to_renderer({
-                    id: tp.id,
-                    packet: return_data,
-                    type: Command.Types.Return
-                });
+                    this.send_to_renderer({
+                        id: tp.id,
+                        packet: return_data,
+                        type: Command.Types.Return
+                    });
+                        break;
 
-                console.log("Returning packet");
+                case Command.Types.Return:
+                    const queue_node = this.send_queue.find(sq => sq.id == tp.id);
+
+                    this.send_queue.shift();
+
+                    queue_node?.on_return(tp.packet as Return);
+                    this.poll_next();
+                    break;
             }
         }
 
         public send(packet: Packet, callback: (return_data: Return) => void) {
+            const id = Common.get_unique_id(this.send_queue.map(sq => sq.id));
+
             this.send_queue.push({
                 packet,
                 on_return: callback,
-                id: Common.get_unique_id(this.send_queue.map(sq => sq.id)),
+                id,
                 status: SendQueueStatus.WaitingForSend
             });
         }
