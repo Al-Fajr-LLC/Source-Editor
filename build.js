@@ -23,6 +23,7 @@ build([
     {
         entry: "source/source.ts",
         out: "source.js",
-        platform: "node"
+        platform: "node",
+        external: ["electron"]
     }
 ]);
