@@ -45,14 +45,17 @@ class Handler extends Command.Handler {
             }
         } else if (packet.command == Command.Names.RegisterEventListener) {
             const element = this.get_element_index_by_id(packet.element_id);
+            const id = this.event_listener_unique_identifier_generator.get_identifier();
 
             const listener_function = () => {
-                // TODO: Fire callback on server
-                console.log(element.id);
+                this.send({
+                    command: Command.Names.EventListenerTrigger,
+                    event_name: packet.event_name,
+                    listener_id: id
+                }, () => {});
             }
 
             element.html_element.addEventListener(packet.event_name, listener_function);
-            const id = this.event_listener_unique_identifier_generator.get_identifier();
 
             element.listeners.push({
                 event_name: packet.event_name,
@@ -73,7 +76,7 @@ class Handler extends Command.Handler {
             }
         } else if (packet.command == Command.Names.SetElementStyles) {
             const element = this.get_element_index_by_id(packet.element_id);
-            element.html_element.style = packet.styles;
+            (element.html_element as any).style = packet.styles;
 
             return {
                 command: Command.Names.SetElementStyles

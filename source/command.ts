@@ -41,6 +41,17 @@ namespace Command {
         listener_id: number
     }
 
+    // Event listener triggered callback
+    export interface ElementListenerTriggerPacket {
+        command: Names.EventListenerTrigger,
+        listener_id: number,
+        event_name: string
+    }
+
+    export interface ElementListenerTriggerReturn {
+        command: Names.EventListenerTrigger,
+    }
+
     // Set element styles
     export interface SetElementStylesPacket {
         command: Names.SetElementStyles,
@@ -57,19 +68,22 @@ namespace Command {
         CreateElement,
         RegisterEventListener,
         AppendElementToRoot,
-        SetElementStyles
+        SetElementStyles,
+        EventListenerTrigger
     }
     
     export type Packet = CreateElementPacket 
         | RegisterEventListenerPacket 
         | AppendElementToRootPacket
-        | SetElementStylesPacket;
+        | SetElementStylesPacket
+        | ElementListenerTriggerPacket;
 
     // Return
     export type Return = CreateElementReturn 
         | RegisterEventListenerReturn 
         | AppendElementToRootReturn
-        | SetElementStylesReturn;
+        | SetElementStylesReturn
+        | ElementListenerTriggerReturn;
 
     // Transporter 
     export interface TransportPacket {
@@ -134,6 +148,7 @@ namespace Command {
             switch (tp.type) {
                 case Command.Types.Send:
                     const return_data = this.on_receive(tp.packet as Command.Packet);
+                    console.log(tp.packet);
 
                     this.send_to_renderer({
                         id: tp.id,
