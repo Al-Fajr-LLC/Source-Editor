@@ -1,7 +1,6 @@
 import electron from "electron";
 import Command from "./command";
 import Common from "./common";
-import WebSocket from "ws";
 
 interface EventListenerNode {
     event_name: string,
@@ -19,23 +18,9 @@ class Handler extends Command.Handler {
     private readonly html_elements: HTMLElementContainer[] = [];
     private readonly element_unique_identifier_generator = new Common.UniqueIdentifierGenerator();
     private readonly event_listener_unique_identifier_generator = new Common.UniqueIdentifierGenerator();
-    private readonly websocket_client: WebSocket;
-
-    public constructor(port: number) {
-        super();
-        this.websocket_client = new WebSocket(`ws://localhost:` + port);
-
-        this.websocket_client.on("message", (jstring) => {
-            try {
-                this.on_raw_return(JSON.parse(jstring.toString()));
-            } catch (e) {
-                console.error(e);
-            }
-        });
-    }
 
     protected send_to_renderer(tp: Command.TransportPacket): void {
-        this.websocket_client.send(JSON.stringify(tp));
+        electron.ipcRenderer.send("packet", tp);
     }
 
     public on_receive(packet: Command.Packet): Command.Return {
@@ -115,7 +100,7 @@ class Handler extends Command.Handler {
             }
         }
 
-        return {}
+        return {} as unknown as any;
     }
 
     private get_element_index_by_id(id: number) {
@@ -136,7 +121,7 @@ class Handler extends Command.Handler {
     }
 }
 
-const handler = new Handler(2345);
+const handler = new Handler();
 
 electron.ipcRenderer.on("packet", (event, tp: Command.TransportPacket) => {
     handler.on_raw_return(tp);

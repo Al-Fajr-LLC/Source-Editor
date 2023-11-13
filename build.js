@@ -9,6 +9,10 @@ function build(targets) {
             external: (target.external ?? []),
             bundle: true,
             platform: target.platform,
+            sourcemap: true,
+            banner: {
+                js: `require("source-map-support").install();\n`
+            }
         });
     })
 }
