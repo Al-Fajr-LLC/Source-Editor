@@ -10,7 +10,7 @@ namespace Command {
 
     export interface CreateElementReturn {
         command: Names.CreateElement,
-        id: number
+        element_id: number
     }
 
     export enum CreateElementType {
@@ -19,10 +19,20 @@ namespace Command {
         P
     }
 
+    // Append element to root
+    export interface AppendElementToRootPacket {
+        command: Names.AppendElementToRoot,
+        element_id: number
+    } 
+
+    export interface AppendElementToRootReturn {
+        command: Names.AppendElementToRoot
+    }
+
     // Register event listener
     export interface RegisterEventListenerPacket {
         command: Names.RegisterEventListener,
-        event_name: RegisterEventListenerNames,
+        event_name: string,
         element_id: number
     }
 
@@ -31,22 +41,35 @@ namespace Command {
         listener_id: number
     }
 
-    export enum RegisterEventListenerNames {
-        Click,
-        MouseEnter,
-        MouseLeave
+    // Set element styles
+    export interface SetElementStylesPacket {
+        command: Names.SetElementStyles,
+        element_id: number,
+        styles: string
+    }
+
+    export interface SetElementStylesReturn {
+        command: Names.SetElementStyles
     }
 
     // Commands
     export enum Names {
         CreateElement,
-        RegisterEventListener
+        RegisterEventListener,
+        AppendElementToRoot,
+        SetElementStyles
     }
     
-    export type Packet = CreateElementPacket | RegisterEventListenerPacket;
+    export type Packet = CreateElementPacket 
+        | RegisterEventListenerPacket 
+        | AppendElementToRootPacket
+        | SetElementStylesPacket;
 
     // Return
-    export type Return = CreateElementReturn | RegisterEventListenerReturn;
+    export type Return = CreateElementReturn 
+        | RegisterEventListenerReturn 
+        | AppendElementToRootReturn
+        | SetElementStylesReturn;
 
     // Transporter 
     export interface TransportPacket {

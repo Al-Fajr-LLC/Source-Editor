@@ -21,6 +21,14 @@ class Handler extends Command.Handler {
     }
 }
 
+let handler: Handler;
+
+function send_async<ReturnType extends Command.Return>(packet: Command.Packet) {
+    return new Promise<ReturnType>((resolve, reject) => {
+        handler.send(packet, (element_return) => resolve(element_return as unknown as any));
+    });
+} 
+
 electron.app.once("ready", () => {
     const window = new electron.BrowserWindow({
         width: 1200,
@@ -33,73 +41,86 @@ electron.app.once("ready", () => {
         }
     });
 
-    // window.maximize();
+    handler = new Handler(window);
+
+    window.maximize();
     window.loadFile(path.join(__dirname, "../source/source.html"));
     window.show();
     window.webContents.openDevTools();
-
-    const handler = new Handler(window);
 
     electron.ipcMain.on("packet", (event, tp) => {
         handler.on_raw_return(tp);
     });
 
-    function send_async(packet: Command.Packet) {
-        return new Promise<Command.Return>((resolve, reject) => {
-            handler.send(packet, (element_return) => resolve(element_return));
-        });
-    } 
-
     window.webContents.once("dom-ready", () => {
-        const els = [] as number[];
-        (async () => {
-            send_async({
-                command: Command.Names.CreateElement,
-                element_type: Command.CreateElementType.P
-            }).then((el) => {
-                console.log("Successfully created P, ID = " + el.id);
-                els.push(el.id)
-            });
-    
-            send_async({
-                command: Command.Names.CreateElement,
-                element_type: Command.CreateElementType.Div
-            }).then((el) => {
-                console.log("Successfully created DIV, ID = " + el.id);
-                els.push(el.id);
-            });
-    
-            let i = 0;
-            let max = 100;
-    
-            function go() {
-                send_async({
-                    command: Command.Names.CreateElement,
-                    element_type: Command.CreateElementType.Div
-                }).then((el) => {
-                    els.push(el.id);
-                });
-    
-                if (i > max) return;
-                i++;
-    
-                // setTimeout(() => {
-                    go();
-                // }, Math.random() * 100);
-            }
-    
-            go();
-
-            setTimeout(() => {
-                for (i = 0; i < els.length; i++) {
-                    const elid = els[i];
-                    send_async({
-                        command: Command.Names.RegisterEventListener,
-                        element_id: elid,
-                        event_name: "red"
-                    })
-                }
-            }, 2000);
-        })();
+        main();
     });
 });
+
+enum ElementErrors {
+    ElementNotReady
+}
+
+enum ElementEvent {
+    Click
+}
+
+class Element {
+    private element_id: number;
+    private readonly execution_gate = new Common.ExecutionGate();
+
+    public constructor(type: Command.CreateElementType = Command.CreateElementType.Div) {
+        send_async<Command.CreateElementReturn>({
+            command: Command.Names.CreateElement,
+            element_type: type
+        }).then((element_id) => {
+            this.element_id = element_id.element_id;
+            this.execution_gate.start();
+        });
+    }
+
+    public append_to_root() {
+        this.execution_gate.execute(() => {
+            send_async({
+                command: Command.Names.AppendElementToRoot,
+                element_id: this.element_id
+            });
+        });
+    }
+
+    public on_click(callback: () => void) {
+        this.execution_gate.execute(() => {
+            send_async({
+                command: Command.Names.RegisterEventListener,
+                element_id: this.element_id,
+                event_name: "click"
+            });
+        });
+    }
+
+    public set_styles(styles: string) {
+        this.execution_gate.execute(() => {
+            send_async({
+                command: Command.Names.SetElementStyles,
+                element_id: this.element_id,
+                styles
+            });
+        });
+    }
+}
+
+function main() {
+    const body = new Element();
+
+    body.append_to_root();
+
+    body.set_styles(`width: 100px; height: 100px; background: red;`);
+
+    body.on_click(() => {
+        console.log("Body clicked");
+    });
+
+    body.on_click(() => {
+        console.log("2 Body clicked");
+    });
+}

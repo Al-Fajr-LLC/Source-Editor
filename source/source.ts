@@ -2,9 +2,16 @@ import electron from "electron";
 import Command from "./command";
 import Common from "./common";
 
+interface EventListenerNode {
+    event_name: string,
+    html_ev_id: any,
+    listener_id: number
+}
+
 interface HTMLElementContainer {
     html_element: HTMLElement,
-    id: number
+    id: number,
+    listeners: EventListenerNode[]
 }
 
 class Handler extends Command.Handler {
@@ -28,19 +35,48 @@ class Handler extends Command.Handler {
 
             this.html_elements.push({
                 html_element: element,
-                id
+                id,
+                listeners: []
             });
 
             return {
                 command: Command.Names.CreateElement,
-                id
+                element_id: id
             }
         } else if (packet.command == Command.Names.RegisterEventListener) {
             const element = this.get_element_index_by_id(packet.element_id);
 
+            const listener_function = () => {
+                // TODO: Fire callback on server
+                console.log(element.id);
+            }
+
+            element.html_element.addEventListener(packet.event_name, listener_function);
+            const id = this.event_listener_unique_identifier_generator.get_identifier();
+
+            element.listeners.push({
+                event_name: packet.event_name,
+                html_ev_id: listener_function,
+                listener_id: id
+            });
+
             return {
                 command: Command.Names.RegisterEventListener,
+                listener_id: id
+            }
+        } else if (packet.command == Command.Names.AppendElementToRoot) {
+            const element = this.get_element_index_by_id(packet.element_id);
+            document.body.appendChild(element.html_element);
 
+            return {
+                command: Command.Names.AppendElementToRoot
+            }
+        } else if (packet.command == Command.Names.SetElementStyles) {
+            const element = this.get_element_index_by_id(packet.element_id);
+            element.html_element.style = packet.styles;
+
+            return {
+                command: Command.Names.SetElementStyles
             }
         }
 
@@ -48,7 +84,7 @@ class Handler extends Command.Handler {
     }
 
     private get_element_index_by_id(id: number) {
-        return this.html_elements.find(el => el.id == id);
+        return this.html_elements.find(el => el.id == id)!;
     }
 
     private static stringify_element_name(element: Command.CreateElementType) {

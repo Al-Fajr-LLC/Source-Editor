@@ -46,6 +46,39 @@ namespace Common {
             }
         }
     }
+
+    export class EnumError<EnumType> extends Error {
+        public readonly code: EnumType;
+
+        public constructor(error: EnumType) {
+            super();
+            this.name = EnumError + "";
+            this.code = error;
+        }
+    }
+
+    export class ExecutionGate {
+        private allow_execution = false;
+        private queue: (() => void)[] = [];
+
+        public execute(source: () => void) {
+            if (this.allow_execution) {
+                source();
+            } else {
+                this.queue.push(source);
+            }
+        }
+
+        public start() {
+            this.allow_execution = true;
+
+            this.queue.forEach((source) => {
+                source();
+            });
+
+            this.queue = [];
+        }
+    }
 }
 
 export default Common;
