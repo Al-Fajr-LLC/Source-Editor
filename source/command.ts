@@ -22,12 +22,13 @@ namespace Command {
     // Register event listener
     export interface RegisterEventListenerPacket {
         command: Names.RegisterEventListener,
-        event_name: RegisterEventListenerNames
+        event_name: RegisterEventListenerNames,
+        element_id: number
     }
 
     export interface RegisterEventListenerReturn {
         command: Names.RegisterEventListener,
-        id: number
+        listener_id: number
     }
 
     export enum RegisterEventListenerNames {
@@ -74,7 +75,8 @@ namespace Command {
 
     export abstract class Handler {
         private send_queue: SendQueueNode[] = [];
-        private readonly polling_interval = 500;
+        private readonly polling_interval = 0;
+        private readonly unique_identifier_generator = new Common.UniqueIdentifierGenerator();
 
         public constructor() {
             this.execute_next_queue();
@@ -88,7 +90,6 @@ namespace Command {
 
         private execute_next_queue() {
             if (this.send_queue.length == 0) {
-                console.log("Queue empty, trying again");
                 this.poll_next();
                 return;
             }
@@ -121,6 +122,7 @@ namespace Command {
                 case Command.Types.Return:
                     const queue_node = this.send_queue.find(sq => sq.id == tp.id);
 
+                    this.unique_identifier_generator.deallocate_identifier(this.send_queue[this.send_queue.length - 1].id);
                     this.send_queue.shift();
 
                     queue_node?.on_return(tp.packet as Return);
@@ -130,12 +132,10 @@ namespace Command {
         }
 
         public send(packet: Packet, callback: (return_data: Return) => void) {
-            const id = Common.get_unique_id(this.send_queue.map(sq => sq.id));
-
             this.send_queue.push({
                 packet,
                 on_return: callback,
-                id,
+                id: this.unique_identifier_generator.get_identifier(),
                 status: SendQueueStatus.WaitingForSend
             });
         }

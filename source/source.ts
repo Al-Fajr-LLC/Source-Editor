@@ -7,69 +7,48 @@ interface HTMLElementContainer {
     id: number
 }
 
-const element_table_chart = document.createElement("table");
-document.body.appendChild(element_table_chart);
-
 class Handler extends Command.Handler {
-    private html_elements: HTMLElementContainer[] = [];
+    private readonly html_elements: HTMLElementContainer[] = [];
+    private readonly element_unique_identifier_generator = new Common.UniqueIdentifierGenerator();
+    private readonly event_listener_unique_identifier_generator = new Common.UniqueIdentifierGenerator();
 
     protected send_to_renderer(tp: Command.TransportPacket): void {
         electron.ipcRenderer.send("packet", tp);
     }
 
-    private render_table() {
-        element_table_chart.innerHTML = "";
+    public on_receive(packet: Command.Packet): Command.Return {
+        if (packet.command == Command.Names.CreateElement) {
+            const element = document.createElement(Handler.stringify_element_name(packet.element_type));
+            const id = this.element_unique_identifier_generator.get_identifier();
 
-        // Render header
-        const header_rows = document.createElement("tr");
-        const properties = ["id", "name"];
+            if (id == 12) {
+                this.element_unique_identifier_generator.deallocate_identifier(this.html_elements[3].id);
+                this.html_elements.splice(3, 1);
+            }
 
-        properties.forEach((property) => {
-            const type = document.createElement("th");
-            type.innerText = property;
+            this.html_elements.push({
+                html_element: element,
+                id
+            });
 
-            header_rows.appendChild(type);
-        });
+            return {
+                command: Command.Names.CreateElement,
+                id
+            }
+        } else if (packet.command == Command.Names.RegisterEventListener) {
+            const element = this.get_element_index_by_id(packet.element_id);
 
-        element_table_chart.appendChild(header_rows);
+            return {
+                command: Command.Names.RegisterEventListener,
 
-        // Render data
-        this.html_elements.forEach((el) => {
-            const row = document.createElement("tr");
-            const name = document.createElement("td");
-            const id = document.createElement("td");
+            }
+        }
 
-            name.innerText = el.html_element.tagName;
-            id.innerText = el.id + "";
-
-            row.appendChild(id);
-            row.appendChild(name);
-
-            element_table_chart.appendChild(row);
-        });
+        return {}
     }
 
-    public on_receive(packet: Command.Packet): Command.Return {
-        switch (packet.command) {
-            case Command.Names.CreateElement:
-                const element = document.createElement(Handler.stringify_element_name(packet.element_type));
-                const id = Common.get_unique_id(this.html_elements.map(he => he.id));
-
-                if (id == 12) {
-                    this.html_elements.splice(3, 1);
-                }
-
-                this.html_elements.push({
-                    html_element: element,
-                    id
-                });
-
-                this.render_table();
-                return {
-                    command: packet.command,
-                    id
-                }
-        }
+    private get_element_index_by_id(id: number) {
+        return this.html_elements.find(el => el.id == id);
     }
 
     private static stringify_element_name(element: Command.CreateElementType) {

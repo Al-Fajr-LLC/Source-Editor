@@ -50,40 +50,56 @@ electron.app.once("ready", () => {
         });
     } 
 
-    (async () => {
-        send_async({
-            command: Command.Names.CreateElement,
-            element_type: Command.CreateElementType.P
-        }).then((el) => {
-            console.log("Successfully created P, ID = " + el.id);
-        });
-
-        send_async({
-            command: Command.Names.CreateElement,
-            element_type: Command.CreateElementType.Div
-        }).then((el) => {
-            console.log("Successfully created DIV, ID = " + el.id);
-        });
-
-        let i = 0;
-        let max = 30;
-
-        function go() {
+    window.webContents.once("dom-ready", () => {
+        const els = [] as number[];
+        (async () => {
+            send_async({
+                command: Command.Names.CreateElement,
+                element_type: Command.CreateElementType.P
+            }).then((el) => {
+                console.log("Successfully created P, ID = " + el.id);
+                els.push(el.id)
+            });
+    
             send_async({
                 command: Command.Names.CreateElement,
                 element_type: Command.CreateElementType.Div
             }).then((el) => {
                 console.log("Successfully created DIV, ID = " + el.id);
+                els.push(el.id);
             });
-
-            if (i > max) return;
-            i++;
+    
+            let i = 0;
+            let max = 100;
+    
+            function go() {
+                send_async({
+                    command: Command.Names.CreateElement,
+                    element_type: Command.CreateElementType.Div
+                }).then((el) => {
+                    els.push(el.id);
+                });
+    
+                if (i > max) return;
+                i++;
+    
+                // setTimeout(() => {
+                    go();
+                // }, Math.random() * 100);
+            }
+    
+            go();
 
             setTimeout(() => {
-                go();
-            }, 0);
-        }
-
-        go();
-    })();
+                for (i = 0; i < els.length; i++) {
+                    const elid = els[i];
+                    send_async({
+                        command: Command.Names.RegisterEventListener,
+                        element_id: elid,
+                        event_name: "red"
+                    })
+                }
+            }, 2000);
+        })();
+    });
 });
