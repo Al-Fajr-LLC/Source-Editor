@@ -14,5 +14,8 @@
     "inline-web-worker": "^1.1.0",
     "wait-sync": "^1.0.1",
     "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.9"
   }
 }

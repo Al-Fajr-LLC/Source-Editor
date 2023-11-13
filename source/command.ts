@@ -63,27 +63,56 @@ namespace Command {
         command: Names.SetElementStyles
     }
 
+    // Execute code on an element
+    export interface ExecElementPacket {
+        command: Names.ExecElement,
+        element_id: number,
+        code: string
+    }
+
+    export interface ExecElementReturn {
+        command: Names.ExecElement,
+        return_code: string
+    }
+
+    // Append element
+    export interface AppendElementTargetPacket {
+        command: Names.AppendElementTarget,
+        source_element_id: number,
+        target_element_id: number
+    }
+
+    export interface AppendElementTargetReturn {
+        command: Names.AppendElementTarget
+    }
+
     // Commands
     export enum Names {
         CreateElement,
         RegisterEventListener,
         AppendElementToRoot,
         SetElementStyles,
-        EventListenerTrigger
+        EventListenerTrigger,
+        ExecElement,
+        AppendElementTarget
     }
     
     export type Packet = CreateElementPacket 
         | RegisterEventListenerPacket 
         | AppendElementToRootPacket
         | SetElementStylesPacket
-        | ElementListenerTriggerPacket;
+        | ElementListenerTriggerPacket
+        | ExecElementPacket
+        | AppendElementTargetPacket;
 
     // Return
     export type Return = CreateElementReturn 
         | RegisterEventListenerReturn 
         | AppendElementToRootReturn
         | SetElementStylesReturn
-        | ElementListenerTriggerReturn;
+        | ElementListenerTriggerReturn
+        | ExecElementReturn
+        | AppendElementTargetReturn;
 
     // Transporter 
     export interface TransportPacket {
@@ -148,7 +177,6 @@ namespace Command {
             switch (tp.type) {
                 case Command.Types.Send:
                     const return_data = this.on_receive(tp.packet as Command.Packet);
-                    console.log(tp.packet);
 
                     this.send_to_renderer({
                         id: tp.id,

@@ -3,10 +3,13 @@ import path from "path";
 import Command from "./command";
 import Common from "./common";
 import {EventEmitter} from "events";
+import { WebSocket, WebSocketServer } from "ws";
+import real_main from "./main";
 
 const handler_emitter = new EventEmitter();
 class Handler extends Command.Handler {
     private readonly window: electron.BrowserWindow;
+    private readonly protocol_server = new WebSocketServer({ port: 2345 });
 
     public constructor(window: electron.BrowserWindow) {
         super();
@@ -15,11 +18,18 @@ class Handler extends Command.Handler {
     }
 
     protected send_to_renderer(tp: Command.TransportPacket): void {
-        this.window.webContents.send("packet", tp);
+        console.log(tp);
+        this.protocol_server.clients.forEach((client) => {
+            client.send(JSON.stringify(tp));
+        });
     }
 
     public on_receive(packet: Command.Packet): Command.Return {
         handler_emitter.emit("recv", packet);
+    }
+
+    public get_server() {
+        return this.protocol_server;
     }
 }
 
@@ -37,7 +47,7 @@ electron.app.once("ready", () => {
     window = new electron.BrowserWindow({
         width: 1200,
         height: 800,
-        // frame: false,
+        frame: false,
         show: false,
         webPreferences: {
             contextIsolation: false,
@@ -64,22 +74,31 @@ electron.app.once("ready", () => {
     window.show();
     window.webContents.openDevTools();
 
-    electron.ipcMain.on("packet", (event, tp) => {
-        handler.on_raw_return(tp);
-    });
+    // electron.ipcMain.on("packet", (event, tp) => {
+    //     handler.on_raw_return(tp);
+    // });
 
-    window.webContents.once("dom-ready", () => {
+    handler.get_server().on("connection", (conn) => {
+        conn.on("message", (jstring) => {
+            try {
+                const obj = JSON.parse(jstring.toString());
+                handler.on_raw_return(obj);
+            } catch (e) {
+                console.error(e);
+            }
+        });
+
         main();
     });
+
+    // window.webContents.on("dom-ready", () => {
+    //     main();
+    // });
+
+    // window.webContents.on("devtools-reload-page", () => {
+    //     main();
+    // });
 });
-
-enum ElementErrors {
-    ElementNotReady
-}
-
-enum ElementEvent {
-    Click
-}
 
 interface EventListenerNode {
     event_name: string,
@@ -87,10 +106,11 @@ interface EventListenerNode {
     callback: any
 }
 
-class Element {
+export class Element {
     private element_id: number;
     private readonly execution_gate = new Common.ExecutionGate();
     private readonly event_listeners: EventListenerNode[] = [];
+    public readonly children: Element[] = [];
 
     public constructor(type: Command.CreateElementType = Command.CreateElementType.Div) {
         handler_emitter.on("recv", (p) => this.on_handler_packet(p));
@@ -112,10 +132,26 @@ class Element {
     }
 
     public append_to_root() {
-        this.execution_gate.execute(() => {
-            send_async({
-                command: Command.Names.AppendElementToRoot,
-                element_id: this.element_id
+        return new Promise((resolve, reject) => {
+            this.execution_gate.execute(() => {
+                send_async({
+                    command: Command.Names.AppendElementToRoot,
+                    element_id: this.element_id
+                }).then((return_data) => resolve(return_data));
+            });
+        });
+    }
+
+    public async exec_code(code: string) {
+        return new Promise((resolve, reject) => {
+            this.execution_gate.execute(() => {
+                send_async<Command.ExecElementReturn>({
+                    command: Command.Names.ExecElement,
+                    element_id: this.element_id,
+                    code
+                }).then((return_data) => {
+                    resolve(return_data.return_code)
+                })
             });
         });
     }
@@ -152,12 +188,28 @@ class Element {
         return await this.register_event_listener("mouseleave", callback);
     }
 
-    public set_styles(styles: string) {
-        this.execution_gate.execute(() => {
-            send_async({
-                command: Command.Names.SetElementStyles,
-                element_id: this.element_id,
-                styles
+    public async set_styles(styles: string) {
+        return new Promise((resolve, reject) => {
+            this.execution_gate.execute(() => {
+                send_async({
+                    command: Command.Names.SetElementStyles,
+                    element_id: this.element_id,
+                    styles
+                }).then((return_data) => {
+                    resolve(return_data);
+                });
+            });
+        });
+    }
+
+    public async append_child(element: Element) {
+        return new Promise((resolve, reject) => {
+            this.execution_gate.execute(() => {
+                send_async({
+                    command: Command.Names.AppendElementTarget,
+                    source_element_id: element.element_id,
+                    target_element_id: this.element_id
+                }).then((return_data) => resolve(return_data));
             });
         });
     }
@@ -170,34 +222,9 @@ function show_dialog(title: string, body: string) {
     dialog.webContents.send("body-set", body);
 }
 
-function main() {
-    const body = new Element();
-    const el_2 = new Element();
-
-    body.append_to_root();
-
-    body.set_styles(`width: 100px; height: 100px; background: red;`);
-    el_2.set_styles(`width: 100px; height: 100px; background: blue;`);
-
-    el_2.on_mouse_enter(() => {
-        el_2.set_styles(`width: 100px; height: 100px; background: darkblue;`);
-    });
-
-    el_2.on_mouse_leave(() => {
-        el_2.set_styles(`width: 100px; height: 100px; background: blue;`);
-    })
-
-    el_2.on_click(() => {
-        show_dialog("EL 2 Click", "EL2 was clicked remotely");
-    });
-
-    body.on_click(() => {
-        console.log("Body clicked");
-    });
-
-    body.on_click(() => {
-        console.log("2 Body clicked");
-    });
-
-    el_2.append_to_root();
+async function main() {
+    console.log("Wrapping main function");
+    console.log("Element program started");
+    await real_main();
+    console.log("Done");
 }

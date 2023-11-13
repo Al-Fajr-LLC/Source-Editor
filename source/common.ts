@@ -19,31 +19,41 @@ namespace Common {
         return chosen_id;
     }
 
+    // export class UniqueIdentifierGenerator {
+    //     private next_incremental_identifier = 0;
+    //     private readonly deallocated_identifiers: number[] = [];
+
+    //     public get_identifier() {
+    //         if (this.deallocated_identifiers.length > 0) {
+    //             const identifier = this.deallocated_identifiers[0];
+    //             this.deallocated_identifiers.shift();
+    //             return identifier;        
+    //         }
+
+    //         const identifier = this.next_incremental_identifier;
+    //         this.next_incremental_identifier += 1;
+    //         return identifier;
+    //     }
+
+    //     public deallocate_identifier(identifier: number) {
+    //         this.deallocated_identifiers.push(identifier);
+
+    //         while (
+    //             this.deallocated_identifiers[this.deallocated_identifiers.length - 1] == this.next_incremental_identifier - 1
+    //         ) {
+    //             this.deallocated_identifiers.pop();
+    //             this.next_incremental_identifier -= 1;
+    //         }
+    //     }
+    // }
+
     export class UniqueIdentifierGenerator {
-        private next_incremental_identifier = 0;
-        private readonly deallocated_identifiers: number[] = [];
-
         public get_identifier() {
-            if (this.deallocated_identifiers.length > 0) {
-                const identifier = this.deallocated_identifiers[0];
-                this.deallocated_identifiers.shift();
-                return identifier;        
-            }
-
-            const identifier = this.next_incremental_identifier;
-            this.next_incremental_identifier += 1;
-            return identifier;
+            return Math.random() * 100;
         }
 
         public deallocate_identifier(identifier: number) {
-            this.deallocated_identifiers.push(identifier);
 
-            while (
-                this.deallocated_identifiers[this.deallocated_identifiers.length - 1] == this.next_incremental_identifier - 1
-            ) {
-                this.deallocated_identifiers.pop();
-                this.next_incremental_identifier -= 1;
-            }
         }
     }
 
@@ -78,6 +88,10 @@ namespace Common {
 
             this.queue = [];
         }
+    }
+
+    export class Array<ElementType> {
+
     }
 }
 
