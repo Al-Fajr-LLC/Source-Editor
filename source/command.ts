@@ -1,5 +1,4 @@
 import Common from "./common";
-import wait_sync from "wait-sync";
 
 namespace Command {
     // Create element
@@ -86,6 +85,28 @@ namespace Command {
         command: Names.AppendElementTarget
     }
 
+    // Set element html content
+    export interface SetElementInnerHTMLPacket {
+        command: Names.SetElementInnerHTML,
+        element_id: number,
+        inner_html: string
+    }
+
+    export interface SetElementInnerHTMLReturn {
+        command: Names.SetElementInnerHTML
+    }
+
+    // Set element text content
+    export interface SetElementInnerTextPacket {
+        command: Names.SetElementInnerText,
+        element_id: number,
+        inner_text: string
+    }
+
+    export interface SetElementInnerTextReturn {
+        command: Names.SetElementInnerText
+    }
+
     // Commands
     export enum Names {
         CreateElement,
@@ -94,7 +115,9 @@ namespace Command {
         SetElementStyles,
         EventListenerTrigger,
         ExecElement,
-        AppendElementTarget
+        AppendElementTarget,
+        SetElementInnerHTML,
+        SetElementInnerText
     }
     
     export type Packet = CreateElementPacket 
@@ -103,7 +126,9 @@ namespace Command {
         | SetElementStylesPacket
         | ElementListenerTriggerPacket
         | ExecElementPacket
-        | AppendElementTargetPacket;
+        | AppendElementTargetPacket
+        | SetElementInnerHTMLPacket
+        | SetElementInnerTextPacket;
 
     // Return
     export type Return = CreateElementReturn 
@@ -112,7 +137,9 @@ namespace Command {
         | SetElementStylesReturn
         | ElementListenerTriggerReturn
         | ExecElementReturn
-        | AppendElementTargetReturn;
+        | AppendElementTargetReturn
+        | SetElementInnerHTMLReturn
+        | SetElementInnerTextReturn;
 
     // Transporter 
     export interface TransportPacket {

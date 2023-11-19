@@ -105,6 +105,34 @@ namespace Element {
             });
         }
 
+        public async set_inner_html(html: string) {
+            return new Promise((resolve, reject) => {
+                this.execution_gate.execute(() => {
+                    send_async({
+                        command: Command.Names.SetElementInnerHTML,
+                        element_id: this.element_id,
+                        inner_html: html
+                    }).then((return_data) => {
+                        resolve(return_data);
+                    });
+                });
+            });
+        }
+
+        public async set_inner_text(text: string) {
+            return new Promise((resolve, reject) => {
+                this.execution_gate.execute(() => {
+                    send_async({
+                        command: Command.Names.SetElementInnerText,
+                        element_id: this.element_id,
+                        inner_text: text
+                    }).then((return_data) => {
+                        resolve(return_data);
+                    });
+                });
+            });
+        }
+
         public async append_child(element: Element) {
             return new Promise((resolve, reject) => {
                 this.execution_gate.execute(() => {
@@ -120,6 +148,12 @@ namespace Element {
 
     export class Container extends Element {
 
+    }
+
+    export class Button extends Element {
+        public constructor() {
+            super();
+        }
     }
 }
 

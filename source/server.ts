@@ -6,6 +6,8 @@ import real_main from "./main";
 
 export const handler_emitter = new EventEmitter();
 
+handler_emitter.setMaxListeners(Infinity);
+
 class Handler extends Command.Handler {
     private readonly window: electron.BrowserWindow;
 

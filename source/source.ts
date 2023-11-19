@@ -93,10 +93,23 @@ class Handler extends Command.Handler {
             const source = this.get_element_index_by_id(packet.source_element_id);
             const target = this.get_element_index_by_id(packet.target_element_id);
 
+            console.log(packet);
             target.html_element.appendChild(source.html_element);
 
             return {
                 command: Command.Names.AppendElementTarget
+            }
+        } else if (packet.command == Command.Names.SetElementInnerHTML) {
+            const element = this.get_element_index_by_id(packet.element_id);
+            element.html_element.innerHTML = packet.inner_html;
+            return {
+                command: Command.Names.SetElementInnerHTML
+            }
+        } else if (packet.command == Command.Names.SetElementInnerText) {
+            const element = this.get_element_index_by_id(packet.element_id);
+            element.html_element.innerText = packet.inner_text;
+            return {
+                command: Command.Names.SetElementInnerText
             }
         }
 
